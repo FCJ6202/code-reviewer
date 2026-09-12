@@ -1,39 +1,48 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"log"
 	"net/http"
-	"os"
-	"runtime"
+
+	"github.com/fcj6202/code-reviewer/backend/internal/config"
+	"github.com/fcj6202/code-reviewer/backend/internal/module/review"
+	"github.com/fcj6202/code-reviewer/backend/internal/module/rule"
+	"github.com/fcj6202/code-reviewer/backend/internal/module/user"
+	"github.com/fcj6202/code-reviewer/backend/internal/platform"
+	"github.com/fcj6202/code-reviewer/backend/internal/router"
 )
 
 func main() {
-	mux := http.NewServeMux()
+	ctx := context.Background()
+	cfg := config.Load()
 
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-	})
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "24/7 Intelligent Code Reviewer API",
-			"path":    r.URL.Path,
-			"go":      runtime.Version(),
-		})
-	})
-
-	logged := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("request %s %s", r.Method, r.URL.Path)
-		mux.ServeHTTP(w, r)
-	})
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	gem, err := platform.NewGemini(ctx, cfg)
+	if err != nil {
+		log.Fatalf("gemini client: %v", err)
 	}
-	log.Printf("listening on :%s (built with %s)", port, runtime.Version())
-	log.Fatal(http.ListenAndServe(":"+port, logged))
+
+	// Phase 2 wiring: static rules, in-memory review repo, no-op user service.
+	// Phase 3 swaps rule.NewStatic → rule.NewBigQuery.
+	// Phase 4 swaps review.NewMemoryRepo → review.NewFirestoreRepo and
+	// user.NewNoop → user.New(firestore), and router.DevAuth → FirebaseAuth.
+	rules := rule.NewStatic()
+	users := user.NewNoop()
+	reviews := review.New(gem, rules, review.NewMemoryRepo(), users)
+
+	var auth router.AuthVerifier = router.DevAuth{}
+	if !cfg.DevAuth {
+		log.Printf("WARNING: DEV_AUTH is false but Firebase auth is not wired until phase 4; using DevAuth")
+	}
+
+	h := router.New(router.Deps{
+		Reviews: reviews,
+		Rules:   rules,
+		Users:   users,
+		Auth:    auth,
+		Config:  cfg,
+	})
+
+	log.Printf("listening on :%s (model=%s, devAuth=%v)", cfg.Port, cfg.GeminiModel, cfg.DevAuth)
+	log.Fatal(http.ListenAndServe(":"+cfg.Port, h))
 }
