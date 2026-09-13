@@ -22,11 +22,18 @@ func main() {
 		log.Fatalf("gemini client: %v", err)
 	}
 
+	bq, err := platform.NewBigQuery(ctx, cfg)
+	if err != nil {
+		log.Fatalf("bigquery client: %v", err)
+	}
+	defer bq.Close()
+
 	// Phase 2 wiring: static rules, in-memory review repo, no-op user service.
-	// Phase 3 swaps rule.NewStatic → rule.NewBigQuery.
+	// rules := rule.NewStatic()
+	// Phase 3 wiring: BigQuery vector rules, in-memory review repo, no-op users.
 	// Phase 4 swaps review.NewMemoryRepo → review.NewFirestoreRepo and
 	// user.NewNoop → user.New(firestore), and router.DevAuth → FirebaseAuth.
-	rules := rule.NewStatic()
+	rules := rule.NewBigQuery(bq, cfg.ProjectID, cfg.BQDataset)
 	users := user.NewNoop()
 	reviews := review.New(gem, rules, review.NewMemoryRepo(), users)
 

@@ -33,7 +33,7 @@ func New(d Deps) http.Handler {
 	// Authenticated API. Each *_routes.go file registers its own group.
 	api := http.NewServeMux()
 	registerReviewRoutes(api, d)
-	// registerRuleRoutes(api, d)  // phase 3
+	registerRuleRoutes(api, d)
 	// registerUserRoutes(api, d)  // phase 4
 	mux.Handle("/api/", http.StripPrefix("/api", requireAuth(d)(api)))
 
