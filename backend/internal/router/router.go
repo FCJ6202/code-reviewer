@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/fcj6202/code-reviewer/backend/internal/config"
+	"github.com/fcj6202/code-reviewer/backend/internal/module/ratelimit"
 	"github.com/fcj6202/code-reviewer/backend/internal/module/review"
 	"github.com/fcj6202/code-reviewer/backend/internal/module/rule"
 	"github.com/fcj6202/code-reviewer/backend/internal/module/user"
@@ -15,6 +16,7 @@ type Deps struct {
 	Reviews review.Service
 	Rules   rule.Service
 	Users   user.Service
+	Limiter ratelimit.Limiter
 	Auth    AuthVerifier
 	Config  config.Config
 }

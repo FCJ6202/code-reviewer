@@ -8,9 +8,10 @@ type Rule struct {
 	Distance    float64 `json:"distance,omitempty" bigquery:"distance"` // set only by Retrieve
 }
 
-// IngestResult reports what an ingest run did (phase 6).
+// IngestResult reports what a rules CSV upload did.
 type IngestResult struct {
 	RowsRead     int64  `json:"rowsRead"`
 	RowsUpserted int64  `json:"rowsUpserted"`
-	SourceFile   string `json:"sourceFile"`
+	RowsFailed   int64  `json:"rowsFailed"` // new or changed rules whose embedding failed; not saved
+	SourceFile   string `json:"sourceFile"` // gs:// URI of the archived upload
 }

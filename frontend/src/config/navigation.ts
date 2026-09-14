@@ -4,17 +4,21 @@ export const ROUTES = {
   reviewPattern: '/reviews/:id',
   review: (id: string) => `/reviews/${encodeURIComponent(id)}`,
   history: '/history',
+  adminRules: '/admin/rules',
   profile: '/me',
 } as const;
 
 export interface NavItem {
   label: string;
   path: string;
+  /** Shown only when GET /api/users/me reports isAdmin. */
+  adminOnly?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
   { label: 'New review', path: ROUTES.newReview },
   { label: 'History', path: ROUTES.history },
+  { label: 'Rules', path: ROUTES.adminRules, adminOnly: true },
   { label: 'Profile', path: ROUTES.profile },
 ];
 

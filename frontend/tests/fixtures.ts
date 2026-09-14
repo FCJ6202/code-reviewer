@@ -78,4 +78,10 @@ export const sampleUser: User = {
   lastSeenAt: '2026-09-13T04:30:00Z',
   reviewCount: 2,
   avgScore: 4.5,
+  isAdmin: true,
 };
+
+export const sampleRules = [
+  { id: 1, type: 'formatting', description: 'Avoid single-character variable names' },
+  { id: 3, type: 'security', description: 'Never interpolate raw user input directly into SQL queries' },
+];

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/fcj6202/code-reviewer/backend/internal/model"
 	"github.com/fcj6202/code-reviewer/backend/internal/module/review"
@@ -72,7 +73,19 @@ func createReview(d Deps) http.HandlerFunc {
 			writeError(w, http.StatusRequestEntityTooLarge, "code exceeds 200 KB")
 			return
 		}
+		// Checked here too so an invalid request doesn't use up a rate-limit slot.
+		if strings.TrimSpace(req.Code) == "" {
+			writeError(w, http.StatusBadRequest, review.ErrEmptyCode.Error())
+			return
+		}
+
 		id := UserFrom(r.Context())
+		// Taken before calling Gemini: failed reviews still cost, and parallel
+		// requests can't slip past the limit.
+		if !allowReview(w, r, d, id.UID) {
+			return
+		}
+
 		rv, err := d.Reviews.Create(r.Context(), id.UID, req)
 		if err != nil {
 			if errors.Is(err, review.ErrEmptyCode) {
