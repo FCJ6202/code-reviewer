@@ -7,6 +7,8 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"firebase.google.com/go/v4/auth"
 )
 
 // Identity is what the auth layer puts into the request context.
@@ -17,16 +19,30 @@ type Identity struct {
 }
 
 // AuthVerifier turns a bearer token into an Identity.
-// Phase 2-3: DevAuth. Phase 4: FirebaseAuth.
 type AuthVerifier interface {
 	Verify(ctx context.Context, idToken string) (Identity, error)
 }
 
-// DevAuth accepts any request and returns a fixed identity. Local dev only.
+// DevAuth accepts any request and returns a fixed identity. Local dev only
+// (DEV_AUTH=true); never deploy with it.
 type DevAuth struct{}
 
 func (DevAuth) Verify(context.Context, string) (Identity, error) {
 	return Identity{UID: "dev-user", Email: "dev@example.com", Name: "Dev User"}, nil
+}
+
+// FirebaseAuth verifies Firebase ID tokens issued after Google sign-in.
+// VerifyIDToken checks the signature, expiry, audience (our project) and issuer.
+type FirebaseAuth struct{ Client *auth.Client }
+
+func (f FirebaseAuth) Verify(ctx context.Context, idToken string) (Identity, error) {
+	tok, err := f.Client.VerifyIDToken(ctx, idToken)
+	if err != nil {
+		return Identity{}, err
+	}
+	email, _ := tok.Claims["email"].(string)
+	name, _ := tok.Claims["name"].(string)
+	return Identity{UID: tok.UID, Email: email, Name: name}, nil
 }
 
 type ctxKey int
@@ -42,13 +58,14 @@ func UserFrom(ctx context.Context) Identity {
 func requireAuth(d Deps) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-			if _, isDev := d.Auth.(DevAuth); !isDev && token == "" {
+			token, hasBearer := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+			if _, isDev := d.Auth.(DevAuth); !isDev && (!hasBearer || token == "") {
 				writeError(w, http.StatusUnauthorized, "missing bearer token")
 				return
 			}
 			id, err := d.Auth.Verify(r.Context(), token)
 			if err != nil {
+				log.Printf("auth: %v", err)
 				writeError(w, http.StatusUnauthorized, "invalid token")
 				return
 			}

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"time"
 
@@ -20,6 +21,8 @@ import (
 )
 
 var ErrNotFound = errors.New("review not found")
+
+var validID = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
 
 const (
 	rulesPerReview = 6
@@ -102,6 +105,9 @@ func (s *service) Create(ctx context.Context, uid string, req model.ReviewReques
 }
 
 func (s *service) Get(ctx context.Context, uid, id string) (*model.Review, error) {
+	if !validID.MatchString(id) {
+		return nil, ErrNotFound // also keeps odd strings out of Firestore paths
+	}
 	return s.repo.Get(ctx, uid, id)
 }
 

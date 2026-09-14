@@ -14,8 +14,26 @@ import (
 func registerReviewRoutes(mux *http.ServeMux, d Deps) {
 	mux.HandleFunc("POST /reviews", createReview(d))
 	mux.HandleFunc("GET /reviews", listReviews(d))
-	// Phase 4 adds:
-	// mux.HandleFunc("GET /reviews/{id}", getReview(d))
+	mux.HandleFunc("GET /reviews/{id}", getReview(d))
+}
+
+// getReview returns one of the caller's reviews, including the submitted code.
+// The lookup is scoped to the caller's uid, so other users' ids return 404.
+func getReview(d Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := UserFrom(r.Context())
+		rv, err := d.Reviews.Get(r.Context(), id.UID, r.PathValue("id"))
+		if errors.Is(err, review.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "review not found")
+			return
+		}
+		if err != nil {
+			log.Printf("get review: %v", err)
+			writeError(w, http.StatusInternalServerError, "could not load review")
+			return
+		}
+		writeJSON(w, http.StatusOK, rv)
+	}
 }
 
 // listReviews returns the caller's reviews, newest first.
