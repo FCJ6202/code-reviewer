@@ -33,7 +33,7 @@ func Load() Config {
 		Bucket:         envOr("GCS_BUCKET", ""),
 		AdminEmails:    splitCSV(os.Getenv("ADMIN_EMAILS")),
 		AllowedOrigins: splitCSV(envOr("CORS_ORIGINS", "http://localhost:5173")),
-		DevAuth:        envBool("DEV_AUTH", true), // phase 4 flips the default to false
+		DevAuth:        envBool("DEV_AUTH", false), // set true in local .env only
 		MaxCodeBytes:   200 * 1024,
 	}
 }

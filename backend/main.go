@@ -28,18 +28,26 @@ func main() {
 	}
 	defer bq.Close()
 
-	// Phase 2 wiring: static rules, in-memory review repo, no-op user service.
-	// rules := rule.NewStatic()
-	// Phase 3 wiring: BigQuery vector rules, in-memory review repo, no-op users.
-	// Phase 4 swaps review.NewMemoryRepo → review.NewFirestoreRepo and
-	// user.NewNoop → user.New(firestore), and router.DevAuth → FirebaseAuth.
-	rules := rule.NewBigQuery(bq, cfg.ProjectID, cfg.BQDataset)
-	users := user.NewNoop()
-	reviews := review.New(gem, rules, review.NewMemoryRepo(), users)
+	fs, err := platform.NewFirestore(ctx, cfg)
+	if err != nil {
+		log.Fatalf("firestore client: %v", err)
+	}
+	defer fs.Close()
 
-	var auth router.AuthVerifier = router.DevAuth{}
-	if !cfg.DevAuth {
-		log.Printf("WARNING: DEV_AUTH is false but Firebase auth is not wired until phase 4; using DevAuth")
+	rules := rule.NewBigQuery(bq, cfg.ProjectID, cfg.BQDataset)
+	users := user.New(user.NewFirestoreRepo(fs))
+	reviews := review.New(gem, rules, review.NewFirestoreRepo(fs), users)
+
+	var auth router.AuthVerifier
+	if cfg.DevAuth {
+		log.Printf("WARNING: DEV_AUTH=true, every request is treated as dev-user. Local dev only, never deploy this.")
+		auth = router.DevAuth{}
+	} else {
+		fbAuth, err := platform.NewFirebaseAuth(ctx, cfg)
+		if err != nil {
+			log.Fatalf("firebase auth client: %v", err)
+		}
+		auth = router.FirebaseAuth{Client: fbAuth}
 	}
 
 	h := router.New(router.Deps{

@@ -34,7 +34,7 @@ func New(d Deps) http.Handler {
 	api := http.NewServeMux()
 	registerReviewRoutes(api, d)
 	registerRuleRoutes(api, d)
-	// registerUserRoutes(api, d)  // phase 4
+	registerUserRoutes(api, d)
 	mux.Handle("/api/", http.StripPrefix("/api", requireAuth(d)(api)))
 
 	return recoverPanics(requestLog(cors(d.Config.AllowedOrigins)(mux)))

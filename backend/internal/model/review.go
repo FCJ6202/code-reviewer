@@ -38,13 +38,14 @@ type Review struct {
 }
 
 // ReviewSummary is the list-view projection (no code, no findings).
+// Firestore tags must match Review's so the repo can decode a field projection.
 type ReviewSummary struct {
-	ID        string    `json:"id"`
-	Filename  string    `json:"filename"`
-	Language  string    `json:"language"`
-	Score     int       `json:"score"`
-	Summary   string    `json:"summary"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID        string    `json:"id"        firestore:"id"`
+	Filename  string    `json:"filename"  firestore:"filename"`
+	Language  string    `json:"language"  firestore:"language"`
+	Score     int       `json:"score"     firestore:"score"`
+	Summary   string    `json:"summary"   firestore:"summary"`
+	CreatedAt time.Time `json:"createdAt" firestore:"createdAt"`
 }
 
 // ModelOutput is exactly what Gemini is asked to return (response schema).
