@@ -75,8 +75,8 @@ func createReview(d Deps) http.HandlerFunc {
 		id := UserFrom(r.Context())
 		rv, err := d.Reviews.Create(r.Context(), id.UID, req)
 		if err != nil {
-			if errors.Is(err, review.ErrNotFound) {
-				writeError(w, http.StatusNotFound, err.Error())
+			if errors.Is(err, review.ErrEmptyCode) {
+				writeError(w, http.StatusBadRequest, err.Error())
 				return
 			}
 			log.Printf("create review: %v", err)

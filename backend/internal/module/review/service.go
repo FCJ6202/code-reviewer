@@ -20,7 +20,10 @@ import (
 	"google.golang.org/genai"
 )
 
-var ErrNotFound = errors.New("review not found")
+var (
+	ErrNotFound  = errors.New("review not found")
+	ErrEmptyCode = errors.New("code is required")
+)
 
 var validID = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
 
@@ -55,7 +58,7 @@ func New(gem *platform.Gemini, rules rule.Service, repo Repo, users user.Service
 
 func (s *service) Create(ctx context.Context, uid string, req model.ReviewRequest) (*model.Review, error) {
 	if strings.TrimSpace(req.Code) == "" {
-		return nil, errors.New("code is required")
+		return nil, ErrEmptyCode
 	}
 	if req.Language == "" {
 		req.Language = DetectLanguage(req.Filename)

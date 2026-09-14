@@ -1,0 +1,38 @@
+/*
+ * Design tokens (HSL triplets) for the "Night Shift" design.
+ * The app is intentionally dark-only, so there is a single :root theme.
+ * Tailwind maps each variable to a class in tailwind.config.js.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces, darkest to lightest */
+  --background: 210 10.5% 7.5%;
+  --surface: 210 12.5% 9.4%;
+  --card: 214 11.9% 11.6%;
+  --muted: 213 11.7% 15.1%;
+
+  /* Lines */
+  --border: 216 11.6% 16.9%;
+  --input: 213 10.9% 19.8%;
+  --border-strong: 215 9.4% 25.1%;
+
+  /* Text, strongest to faintest */
+  --foreground: 42 16.7% 88.2%;
+  --secondary-foreground: 42 6.2% 68.2%;
+  --muted-foreground: 218 5% 56.7%;
+  --subtle-foreground: 217 6.5% 39%;
+
+  /* Brand + states */
+  --primary: 39 77.5% 60%;
+  --primary-foreground: 210 10.5% 7.5%;
+  --destructive: 7 74.9% 64.1%;
+  --destructive-soft: 8 76.9% 74.5%;
+  --warning: 37 70.8% 58.4%;
+  --success: 126 37.1% 72.5%;
+
+  /* Finding severities */
+  --severity-high: 7 74.9% 64.1%;
+  --severity-medium: 37 70.8% 58.4%;
+  --severity-low: 210 57.4% 64.1%;
+}

@@ -38,6 +38,14 @@ func (f *firestoreRepo) Get(ctx context.Context, uid, id string) (*model.Review,
 	if err := snap.DataTo(&r); err != nil {
 		return nil, fmt.Errorf("decode review %s: %w", id, err)
 	}
+	// Firestore decodes a stored empty array as a nil slice, which JSON encodes
+	// as null. The API contract is always an array.
+	if r.Findings == nil {
+		r.Findings = []model.Finding{}
+	}
+	if r.RulesUsed == nil {
+		r.RulesUsed = []int64{}
+	}
 	return &r, nil
 }
 
