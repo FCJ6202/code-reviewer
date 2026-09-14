@@ -8,33 +8,35 @@ import (
 )
 
 type Config struct {
-	Port           string
-	ProjectID      string
-	GeminiLocation string
-	GeminiModel    string
-	BQDataset      string
-	BQLocation     string
-	Bucket         string
-	AdminEmails    []string
-	AllowedOrigins []string
-	DevAuth        bool
-	MaxCodeBytes   int
+	Port             string
+	ProjectID        string
+	GeminiLocation   string
+	GeminiModel      string
+	BQDataset        string
+	BQLocation       string
+	Bucket           string
+	AdminEmails      []string
+	AllowedOrigins   []string
+	DevAuth          bool
+	MaxCodeBytes     int
+	RateLimitPerHour int // reviews per user per hour; 0 disables the limit
 }
 
 func Load() Config {
 	loadDotEnv(".env")
 	return Config{
-		Port:           envOr("PORT", "8080"),
-		ProjectID:      envOr("PROJECT_ID", ""),
-		GeminiLocation: envOr("GEMINI_LOCATION", "us-central1"),
-		GeminiModel:    envOr("GEMINI_MODEL", "gemini-2.5-flash"),
-		BQDataset:      envOr("BQ_DATASET", "reviewer"),
-		BQLocation:     envOr("BQ_LOCATION", "asia-south1"),
-		Bucket:         envOr("GCS_BUCKET", ""),
-		AdminEmails:    splitCSV(os.Getenv("ADMIN_EMAILS")),
-		AllowedOrigins: splitCSV(envOr("CORS_ORIGINS", "http://localhost:5173")),
-		DevAuth:        envBool("DEV_AUTH", false), // set true in local .env only
-		MaxCodeBytes:   200 * 1024,
+		Port:             envOr("PORT", "8080"),
+		ProjectID:        envOr("PROJECT_ID", ""),
+		GeminiLocation:   envOr("GEMINI_LOCATION", "us-central1"),
+		GeminiModel:      envOr("GEMINI_MODEL", "gemini-2.5-flash"),
+		BQDataset:        envOr("BQ_DATASET", "reviewer"),
+		BQLocation:       envOr("BQ_LOCATION", "asia-south1"),
+		Bucket:           envOr("GCS_BUCKET", ""),
+		AdminEmails:      splitCSV(os.Getenv("ADMIN_EMAILS")),
+		AllowedOrigins:   splitCSV(envOr("CORS_ORIGINS", "http://localhost:5173")),
+		DevAuth:          envBool("DEV_AUTH", false), // set true in local .env only
+		MaxCodeBytes:     200 * 1024,
+		RateLimitPerHour: envInt("RATE_LIMIT_PER_HOUR", 30),
 	}
 }
 
@@ -79,6 +81,18 @@ func envBool(key string, def bool) bool {
 		return def
 	}
 	return b
+}
+
+func envInt(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return def
+	}
+	return n
 }
 
 func splitCSV(s string) []string {

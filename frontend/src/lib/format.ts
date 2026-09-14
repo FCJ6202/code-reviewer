@@ -38,3 +38,8 @@ export function initials(name: string): string {
   const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
   return (first + last).toUpperCase();
 }
+
+/** "1 rule", "21 rules" */
+export function pluralize(count: number, word: string): string {
+  return `${count} ${count === 1 ? word : `${word}s`}`;
+}

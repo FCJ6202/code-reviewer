@@ -5,17 +5,20 @@ import (
 	"log"
 	"net/http"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"time"
 
 	"firebase.google.com/go/v4/auth"
+	"github.com/fcj6202/code-reviewer/backend/internal/config"
 )
 
 // Identity is what the auth layer puts into the request context.
 type Identity struct {
-	UID   string
-	Email string
-	Name  string
+	UID           string
+	Email         string
+	Name          string
+	EmailVerified bool
 }
 
 // AuthVerifier turns a bearer token into an Identity.
@@ -28,7 +31,7 @@ type AuthVerifier interface {
 type DevAuth struct{}
 
 func (DevAuth) Verify(context.Context, string) (Identity, error) {
-	return Identity{UID: "dev-user", Email: "dev@example.com", Name: "Dev User"}, nil
+	return Identity{UID: "dev-user", Email: "dev@example.com", Name: "Dev User", EmailVerified: true}, nil
 }
 
 // FirebaseAuth verifies Firebase ID tokens issued after Google sign-in.
@@ -42,7 +45,8 @@ func (f FirebaseAuth) Verify(ctx context.Context, idToken string) (Identity, err
 	}
 	email, _ := tok.Claims["email"].(string)
 	name, _ := tok.Claims["name"].(string)
-	return Identity{UID: tok.UID, Email: email, Name: name}, nil
+	verified, _ := tok.Claims["email_verified"].(bool)
+	return Identity{UID: tok.UID, Email: email, Name: name, EmailVerified: verified}, nil
 }
 
 type ctxKey int
@@ -74,6 +78,28 @@ func requireAuth(d Deps) func(http.Handler) http.Handler {
 			}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), identityKey, id)))
 		})
+	}
+}
+
+// isAdmin reports whether the caller's verified email is in ADMIN_EMAILS.
+// Unverified emails never count: an account can claim an address it doesn't own.
+func isAdmin(cfg config.Config, id Identity) bool {
+	if !id.EmailVerified || id.Email == "" {
+		return false
+	}
+	return slices.ContainsFunc(cfg.AdminEmails, func(admin string) bool {
+		return strings.EqualFold(admin, id.Email)
+	})
+}
+
+// requireAdmin wraps a handler that only admins may call. Use inside requireAuth.
+func requireAdmin(d Deps, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !isAdmin(d.Config, UserFrom(r.Context())) {
+			writeError(w, http.StatusForbidden, "admin access required")
+			return
+		}
+		next(w, r)
 	}
 }
 
