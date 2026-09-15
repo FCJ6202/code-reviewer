@@ -65,5 +65,6 @@ export const SEVERITY_ORDER: Severity[] = ['high', 'medium', 'low'];
 export const REVIEW_PROGRESS_STEPS = [
   { label: 'Finding relevant team rules', startsAtMs: 0 },
   { label: 'Gemini is reviewing your code', startsAtMs: 2_000 },
-  { label: 'Saving to your history', startsAtMs: 15_000 },
+  // Gemini 2.5 Pro thinks before answering, so the review step is the long one.
+  { label: 'Saving to your history', startsAtMs: 40_000 },
 ] as const;
