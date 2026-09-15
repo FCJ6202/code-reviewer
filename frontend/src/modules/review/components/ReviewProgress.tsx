@@ -28,7 +28,7 @@ export function ReviewProgress() {
           </div>
         );
       })}
-      <span className="font-mono text-[11px] text-subtle-foreground">usually 10–20 s</span>
+      <span className="font-mono text-[11px] text-subtle-foreground">can take up to a minute</span>
     </div>
   );
 }
