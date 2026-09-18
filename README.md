@@ -6,6 +6,7 @@ plus a 1–10 score. Reviews are grounded in a team's **historical review rules*
 search before every Gemini call, and every review is saved so you can track your score over time.
 
 **Live app:** https://qwiklabs-gcp-02-1805d7f7e612.web.app/
+
 **Working Example**: https://drive.google.com/file/d/1jvS1MQn5BdZToxFw54eqi-0abzWgf7_w/view?usp=sharing
 
 ## Features
